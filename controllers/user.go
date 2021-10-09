@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -74,10 +75,17 @@ func (uc UserController) CreateUser(w http.ResponseWriter,r *http.Request,_ http
 
 	u:=models.User{}
 
+	
 	// to decode the body
+	
 	json.NewDecoder(r.Body).Decode(&u)
 
 	u.Id = primitive.NewObjectID();
+
+	// Encrypting the password
+
+	p:= md5.Sum([]byte(u.Password))
+	u.Password = string(p[:])
 
 	// create DB with the given name if its not there
 	uc.session.Database("mongo-golang").Collection("users").InsertOne(context.TODO(),u)

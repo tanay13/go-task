@@ -95,22 +95,35 @@ func (pc PostController) FindAllPost(w http.ResponseWriter,r *http.Request,p htt
 
 	 posts,err := pc.session.Database("mongo-golang").Collection("Posts").Find(context.TODO(),bson.M{"username":n}); 
 	 
-	 var allPost []bson.M
+	 var allPost []models.Post
 
-	 if err:= posts.All(context.TODO(),&allPost); err!=nil{
-		fmt.Printf(err.Error())
-		w.WriteHeader(404)
-		return;
-	 }
+	//  if err:= posts.All(context.TODO(),&allPost); err!=nil{
+	// 	fmt.Printf(err.Error())
+	// 	w.WriteHeader(404)
+	// 	return;
+	//  }
+
+	for posts.Next(context.TODO()) {
+
+		// create a value into which the single document can be decoded
+		var post models.Post
+		// & character returns the memory address of the following variable.
+		err := posts.Decode(&post) // decode similar to deserialize process.
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// add item our array
+		allPost = append(allPost, post)
+	}
 		
 
 	w.Header().Set("Content-Type","application/json")
 
 	w.WriteHeader(http.StatusOK)
 
-	// fmt.Println(allPost)
+	json.NewEncoder(w).Encode(allPost)
 
-	fmt.Fprintf(w,"%s\n",allPost)
 
 
 }
@@ -143,34 +156,3 @@ func (pc PostController) CreatePost(w http.ResponseWriter,r *http.Request,_ http
 }
 
 
-
-
-
-
-func (pc PostController) DeletePost(w http.ResponseWriter, r *http.Request, p httprouter.Params){
-
-	id:= p.ByName("id")
-
-	if !primitive.IsValidObjectID(id){
-		w.WriteHeader(404)
-		return
-	}
-
-	oid,err:= primitive.ObjectIDFromHex(id)
-
-	if err!=nil{
-		fmt.Println("Error")
-	}
-
-	if _,err:=pc.session.Database("mongo-golang").Collection("Posts").DeleteOne(context.TODO(),bson.M{"_id": oid}); err!=nil{
-		w.WriteHeader(404)
-		return;
-	}
-
-
-	w.WriteHeader(http.StatusOK)
-
-	fmt.Fprintf(w,"Deleted Post",oid,"\n")
-
-
-}
